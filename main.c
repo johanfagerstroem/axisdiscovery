@@ -14,9 +14,7 @@
 #define SSDP_PORT 1900
 #define SSDP_TIMEOUT 1
 #define AXIS_SSDP_BUFLEN 512	//Max length of response buffer. AXIS SSDP is normally 496.
-#define AXIS_ROOTDESC_BUFLEN 1200	//Should hold everything
-#define AXIS_ROOTDESC_PORT 49152
-#define AXIS_ROOTDESC_RESOURCE "/rootdesc1.xml"
+#define AXIS_ROOTDESC_BUFLEN 2000	//Should hold everything
 
 const char *REQUEST_AXIS = "M-SEARCH * HTTP/1.1\r\n\
 HOST: 239.255.255.250:1900\r\n\
@@ -49,33 +47,36 @@ void device_free(device *dev)
 device *device_new_from_rootdesc(char *rootdesc)
 {
   device *dev = (device *)malloc(sizeof(device));
+  dev->mac = dev->model = dev->url = NULL;
+  char *begin;
+  char *end;
 
-  char *begin = strstr(rootdesc, "<serialNumber>") + 14;
-  char *end = strstr(rootdesc, "</serialNumber>");
-  if (begin == NULL || end == NULL) {
+  begin = strstr(rootdesc, "<serialNumber>");
+  end = begin ? strstr(begin, "</serialNumber>") : NULL;
+  if (end == NULL) {
     device_free(dev);
     return NULL;
   }
-  int diff = end - begin;
-  dev->mac = strndup(begin, diff);
+  begin += 14;
+  dev->mac = strndup(begin, end - begin);
 
-  begin = strstr(rootdesc, "<modelNumber>") + 13;
-  end = strstr(rootdesc, "</modelNumber>");
-  if (begin == NULL || end == NULL) {
+  begin = strstr(rootdesc, "<modelNumber>");
+  end = begin ? strstr(begin, "</modelNumber>") : NULL;
+  if (end == NULL) {
     device_free(dev);
     return NULL;
   }
-  diff = end - begin;
-  dev->model = strndup(begin, diff);
+  begin += 13;
+  dev->model = strndup(begin, end - begin);
 
-  begin = strstr(rootdesc, "<presentationURL>") + 17;
-  end = strstr(rootdesc, "</presentationURL>");
-  if (begin == NULL || end == NULL) {
+  begin = strstr(rootdesc, "<presentationURL>");
+  end = begin ? strstr(begin, "</presentationURL>") : NULL;
+  if (end == NULL) {
     device_free(dev);
     return NULL;
   }
-  diff = end - begin;
-  dev->url = strndup(begin, diff);
+  begin += 17;
+  dev->url = strndup(begin, end - begin);
 
   return dev;
 }
@@ -134,12 +135,50 @@ void devicelist_print_and_destroy()
   }
 }
 
-char *get_rootdesc(char *address)
+int ssdp_parse_location_port(char *ssdp) {
+  char *begin, *end;
+
+  begin = strstr(ssdp, "LOCATION: http://");
+  if (begin == NULL) return -1;
+  begin += 17;
+
+  begin = strstr(begin, ":");
+  if (begin == NULL) return -1;
+  begin += 1;
+
+  end = strstr(begin, "/");
+  if (end == NULL) return -1;
+
+  char port[6];
+  bzero(port, 6);
+  strncpy(port, begin, end-begin);
+  int portnbr = atoi(port);
+  return portnbr ? portnbr : -1;
+}
+
+char *ssdp_parse_location_resource(char *ssdp) {
+  char *begin, *end;
+
+  begin = strstr(ssdp, "LOCATION: http://");
+  if (begin == NULL) return NULL;
+  begin += 17;
+
+  begin = strstr(begin, "/");
+  if (begin == NULL) return NULL;
+
+  end = strstr(begin, ".xml");
+  if (end == NULL) return NULL;
+  end += 4;
+
+  return strndup(begin, end-begin);
+}
+
+char *get_rootdesc(char *address, int port, char *resource)
 {
   struct sockaddr_in addr = { 0 };
   int on = 1;
 
-  addr.sin_port = htons(AXIS_ROOTDESC_PORT);
+  addr.sin_port = htons(port);
   addr.sin_family = AF_INET;
 
   if (inet_aton(address, &addr.sin_addr) == 0) {
@@ -165,16 +204,16 @@ char *get_rootdesc(char *address)
 
   }
 
-  char *request = "GET " AXIS_ROOTDESC_RESOURCE "\r\n";
+  char request[17 + strlen(resource)];
+  sprintf(request, "GET %s HTTP/1.1\r\n\r\n", resource);
   if (write(fd, request, strlen(request)) == -1) {
     perror("get_rootdesc write() failed");
     return NULL;
   }
 
   char *rootdesc = calloc(AXIS_ROOTDESC_BUFLEN, 1);
-  if (read(fd, rootdesc, AXIS_ROOTDESC_BUFLEN - 1) == -1) {
-    perror("get_rootdesc read() failed");
-    free(rootdesc);
+  if (recv(fd, rootdesc, AXIS_ROOTDESC_BUFLEN - 1, MSG_WAITALL) == -1) {
+    perror("get_rootdesc recvfrom() failed");
     return NULL;
   }
 
@@ -236,12 +275,12 @@ void send_ssdp_and_populate_device_list(char *address)
 
   struct sockaddr_in src_addr;
   socklen_t src_slen = sizeof(src_addr);
-  char buf[AXIS_SSDP_BUFLEN];
+  char ssdp[AXIS_SSDP_BUFLEN];
 
   while (1) {
-    bzero(buf, AXIS_SSDP_BUFLEN);
+    bzero(ssdp, AXIS_SSDP_BUFLEN);
     if (recvfrom
-	(fd, buf, AXIS_SSDP_BUFLEN - 1, 0,
+	(fd, ssdp, AXIS_SSDP_BUFLEN - 1, MSG_WAITALL,
 	 (struct sockaddr *)&src_addr, &src_slen) == -1) {
       if (errno == EAGAIN) {
 	/* Expected timeout, just break the loop */
@@ -252,17 +291,25 @@ void send_ssdp_and_populate_device_list(char *address)
       }
     }
 
-    char *rootdesc = get_rootdesc(inet_ntoa(src_addr.sin_addr));
+    int port = ssdp_parse_location_port(ssdp);
+    char *resource = ssdp_parse_location_resource(ssdp);
+    if (port == -1 || resource == NULL) {
+      continue;
+    }
+
+    char *rootdesc = get_rootdesc(inet_ntoa(src_addr.sin_addr), port, resource);
+    free(resource);
     if (rootdesc == NULL) {
       continue;
     }
 
     device *dev = device_new_from_rootdesc(rootdesc);
-    if (dev != NULL) {
-      devicelist_insert(dev);
+    free(rootdesc);
+    if (dev == NULL) {
+      continue;
     }
 
-    free(rootdesc);
+    devicelist_insert(dev);
 
   }
 
