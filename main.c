@@ -76,6 +76,10 @@ device *device_new_from_rootdesc(char *rootdesc)
     return NULL;
   }
   begin += 17;
+
+  /* Strip _occasional_ last slash */
+  if (*(end - 1) == '/') { end-=1; }
+
   dev->url = strndup(begin, end - begin);
 
   return dev;
@@ -211,15 +215,14 @@ char *get_rootdesc(char *address, int port, char *resource)
     return NULL;
   }
 
-  char *rootdesc = calloc(AXIS_ROOTDESC_BUFLEN, 1);
-  if (recv(fd, rootdesc, AXIS_ROOTDESC_BUFLEN - 1, MSG_WAITALL) == -1) {
-    perror("get_rootdesc recvfrom() failed");
+  if (shutdown(fd, SHUT_WR) == -1) {
+    perror("get_rootdesc shutdown() failed");
     return NULL;
   }
 
-  if (shutdown(fd, SHUT_RDWR) == -1) {
-    perror("get_rootdesc shutdown() failed");
-    free(rootdesc);
+  char *rootdesc = calloc(AXIS_ROOTDESC_BUFLEN, 1);
+  if (recv(fd, rootdesc, AXIS_ROOTDESC_BUFLEN - 1, MSG_WAITALL) == -1) {
+    perror("get_rootdesc recvfrom() failed");
     return NULL;
   }
 
