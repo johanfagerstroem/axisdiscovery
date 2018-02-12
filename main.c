@@ -75,10 +75,13 @@ device *device_new_from_rootdesc(char *rootdesc)
     device_free(dev);
     return NULL;
   }
-  begin += 17;
+  // Strip <PresentationURL>http://
+  begin += 24;
 
-  /* Strip _occasional_ last slash */
-  if (*(end - 1) == '/') { end-=1; }
+  // Remove port from the presentation url.
+  // Strip _occasional_ last slash.
+  if (*(end - 1) == '/') { end-=4; }
+  else { end-=3;}
 
   dev->url = strndup(begin, end - begin);
 
@@ -87,7 +90,7 @@ device *device_new_from_rootdesc(char *rootdesc)
 
 void device_print(device *dev)
 {
-  printf("%-15s  %-10s  %s\n", dev->model, dev->mac, dev->url);
+  printf("%-15s  %-15s  %s\n", dev->model, dev->url, dev->mac);
 }
 
 typedef struct listnode {
