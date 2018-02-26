@@ -16,11 +16,13 @@
 #define AXIS_SSDP_BUFLEN 512	//Max length of response buffer. AXIS SSDP is normally 496.
 #define AXIS_ROOTDESC_BUFLEN 2000	//Should hold everything
 
+#define AXIS_SSDP_ST "urn:axis-com:service:BasicService:1"
+
 const char *REQUEST_AXIS = "M-SEARCH * HTTP/1.1\r\n\
 HOST: 239.255.255.250:1900\r\n\
 MAN: \"ssdp:discover\"\r\n\
 MX: 2\r\n\
-ST: urn:axis-com:service:BasicService:1\r\n\
+ST: " AXIS_SSDP_ST "\r\n\
 \r\n";
 
 typedef struct device {
@@ -235,6 +237,12 @@ char *get_rootdesc(char *address, int port, char *resource)
   return rootdesc;
 }
 
+/* Some devices (read: Philips Hue) do not respect the ST specified
+ * in the SSDP request */
+int is_axis_response(char *ssdp) {
+  return strstr(ssdp, AXIS_SSDP_ST) == NULL ? 0 : 1;
+}
+
 void send_ssdp_and_populate_device_list(char *address)
 {
   struct sockaddr_in addr = { 0 };
@@ -292,6 +300,10 @@ void send_ssdp_and_populate_device_list(char *address)
 	perror("recvfrom() failed");
 	exit(1);
       }
+    }
+
+    if (!is_axis_response(ssdp)) {
+      continue;
     }
 
     int port = ssdp_parse_location_port(ssdp);
