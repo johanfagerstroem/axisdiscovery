@@ -3,16 +3,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 #include <netinet/tcp.h>
 #include <sys/socket.h>
+#include <sys/poll.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 
 #define SSDP_ADDRESS "239.255.255.250"
 #define SSDP_PORT 1900
-#define SSDP_TIMEOUT 1
+#define SSDP_TIMEOUT 2
 #define AXIS_SSDP_BUFLEN 512	//Max length of response buffer. AXIS SSDP is normally 496.
 #define AXIS_ROOTDESC_BUFLEN 2000	//Should hold everything
 
@@ -269,14 +271,6 @@ void send_ssdp_and_populate_device_list(char *address)
     exit(1);
   }
 
-  struct timeval tv;
-  tv.tv_usec = 0;
-  tv.tv_sec = SSDP_TIMEOUT;
-  if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == -1) {
-    perror("send_ssdp setsockopt(timeout) failed");
-    exit(1);
-  }
-
   if (sendto
       (fd, REQUEST_AXIS, strlen(REQUEST_AXIS), 0,
        (struct sockaddr *)&addr, slen) == -1) {
@@ -287,47 +281,60 @@ void send_ssdp_and_populate_device_list(char *address)
   struct sockaddr_in src_addr;
   socklen_t src_slen = sizeof(src_addr);
   char ssdp[AXIS_SSDP_BUFLEN];
+  int pollret;
+  struct pollfd fds[1];
+  fds[0].fd = fd;
+  fds[0].events = POLLIN;
+  time_t deadline = time(0) + SSDP_TIMEOUT;
+  time_t wait;
 
   while (1) {
-    bzero(ssdp, AXIS_SSDP_BUFLEN);
-    if (recvfrom
-	(fd, ssdp, AXIS_SSDP_BUFLEN - 1, MSG_WAITALL,
-	 (struct sockaddr *)&src_addr, &src_slen) == -1) {
-      if (errno == EAGAIN) {
-	/* Expected timeout, just break the loop */
-	break;
-      } else {
-	perror("recvfrom() failed");
-	exit(1);
+    wait = deadline - time(0);
+    if (wait < 0) break;
+
+    pollret = poll(fds, 1, wait*1000);
+    if (pollret == -1) {
+      perror ("poll");
+      exit(1);
+    } else if (pollret == 0) {
+      /* Timeout */
+      break;
+    }
+
+    if (fds[0].revents & POLLIN) {
+      bzero(ssdp, AXIS_SSDP_BUFLEN);
+      if (recvfrom
+        (fd, ssdp, AXIS_SSDP_BUFLEN - 1, 0,
+	   (struct sockaddr *)&src_addr, &src_slen) == -1) {
+        perror("recvfrom() failed");
+        exit(1);
       }
-    }
 
-    if (!is_axis_response(ssdp)) {
-      continue;
-    }
+      if (!is_axis_response(ssdp)) {
+        continue;
+      }
 
-    int port = ssdp_parse_location_port(ssdp);
-    char *resource = ssdp_parse_location_resource(ssdp);
-    if (port == -1 || resource == NULL) {
-      continue;
-    }
+      int port = ssdp_parse_location_port(ssdp);
+      char *resource = ssdp_parse_location_resource(ssdp);
+      if (port == -1 || resource == NULL) {
+        continue;
+      }
 
-    char *rootdesc = get_rootdesc(inet_ntoa(src_addr.sin_addr), port, resource);
-    free(resource);
-    if (rootdesc == NULL) {
-      continue;
-    }
+      char *rootdesc = get_rootdesc(inet_ntoa(src_addr.sin_addr), port, resource);
+      free(resource);
+      if (rootdesc == NULL) {
+        continue;
+      }
 
-    device *dev = device_new_from_rootdesc(rootdesc);
-    free(rootdesc);
-    if (dev == NULL) {
-      continue;
-    }
+      device *dev = device_new_from_rootdesc(rootdesc);
+      free(rootdesc);
+      if (dev == NULL) {
+        continue;
+      }
 
-    devicelist_insert(dev);
-
+      devicelist_insert(dev);
   }
-
+}
   if (close(fd) == -1) {
     perror("send_ssdp close() failed");
     exit(1);
