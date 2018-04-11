@@ -14,9 +14,11 @@
 
 #define SSDP_ADDRESS "239.255.255.250"
 #define SSDP_PORT 1900
-#define SSDP_TIMEOUT 2
-#define AXIS_SSDP_BUFLEN 512	//Max length of response buffer. AXIS SSDP is normally 496.
-#define AXIS_ROOTDESC_BUFLEN 2000	//Should hold everything
+#define SSDP_TIMEOUT 1
+
+/* Axis SSDP and rootdesc are normally around 500 and 1500 bytes respectively */
+#define AXIS_SSDP_BUFLEN 500
+#define AXIS_ROOTDESC_BUFLEN 2000
 
 #define AXIS_SSDP_ST "urn:axis-com:service:BasicService:1"
 
@@ -224,9 +226,24 @@ char *get_rootdesc(char *address, int port, char *resource)
     return NULL;
   }
 
-  char *rootdesc = calloc(AXIS_ROOTDESC_BUFLEN, 1);
-  if (recv(fd, rootdesc, AXIS_ROOTDESC_BUFLEN - 1, MSG_WAITALL) == -1) {
-    perror("get_rootdesc recvfrom() failed");
+  int rootdesc_reserved = AXIS_ROOTDESC_BUFLEN;
+  char *rootdesc = calloc(rootdesc_reserved, 1);
+  int rootdesc_read = 0;
+  int res;
+
+  while((res = read(fd, rootdesc + rootdesc_read, rootdesc_reserved-rootdesc_read - 1)) > 0){
+    rootdesc_read += res;
+    /* If we filled the allocated memory, extended it to twice the size */
+    if (rootdesc_read == rootdesc_reserved-1) {
+      rootdesc_reserved += AXIS_ROOTDESC_BUFLEN;
+      realloc(rootdesc, rootdesc_reserved);
+      bzero(rootdesc + rootdesc_read, rootdesc_reserved - rootdesc_read);
+    }
+  }
+
+  if (res == -1 ) {
+    perror("get_rootdesc read() failed");
+    free(rootdesc);
     return NULL;
   }
 
@@ -281,7 +298,7 @@ void send_ssdp_and_populate_device_list(char *address)
   struct sockaddr_in src_addr;
   socklen_t src_slen = sizeof(src_addr);
   char ssdp[AXIS_SSDP_BUFLEN];
-  int pollret;
+  int pollres;
   struct pollfd fds[1];
   fds[0].fd = fd;
   fds[0].events = POLLIN;
@@ -292,11 +309,11 @@ void send_ssdp_and_populate_device_list(char *address)
     wait = deadline - time(0);
     if (wait < 0) break;
 
-    pollret = poll(fds, 1, wait*1000);
-    if (pollret == -1) {
-      perror ("poll");
+    pollres = poll(fds, 1, wait*1000);
+    if (pollres == -1) {
+      perror ("send_ssdp poll() failed");
       exit(1);
-    } else if (pollret == 0) {
+    } else if (pollres == 0) {
       /* Timeout */
       break;
     }
@@ -306,7 +323,7 @@ void send_ssdp_and_populate_device_list(char *address)
       if (recvfrom
         (fd, ssdp, AXIS_SSDP_BUFLEN - 1, 0,
 	   (struct sockaddr *)&src_addr, &src_slen) == -1) {
-        perror("recvfrom() failed");
+        perror("send_ssdp recvfrom() failed");
         exit(1);
       }
 
