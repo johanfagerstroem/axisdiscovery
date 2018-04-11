@@ -3,7 +3,8 @@ Axis Device Discovery Utility
 A small command-line utility that lists Axis devices on your network using
 UPnP/SSDP.
 
-Written in C for GNU/Linux using no external libraries.
+Written in C for GNU/Linux using no external libraries. Works also under
+Cygwin.
 
 Build:
 ------
@@ -24,7 +25,7 @@ P3224-V Mk II    ACCC8EABCDEF  http://192.168.1.100:80/
 If no broadcast address is provided, the default UPnP address (239.255.255.250)
 will be used.
 
-Maybe future features
+Maybe future features:
 ----------------------
 * Command-line options to sort device list based on MAC or IP instead of model
   number.
