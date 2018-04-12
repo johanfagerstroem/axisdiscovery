@@ -236,7 +236,11 @@ char *get_rootdesc(char *address, int port, char *resource)
     /* If we filled the allocated memory, extended it to twice the size */
     if (rootdesc_read == rootdesc_reserved-1) {
       rootdesc_reserved += AXIS_ROOTDESC_BUFLEN;
-      realloc(rootdesc, rootdesc_reserved);
+      if (!realloc(rootdesc, rootdesc_reserved)) {
+        perror("get_rootdesc realloc() failed");
+        free(rootdesc);
+        return NULL;
+      }
       bzero(rootdesc + rootdesc_read, rootdesc_reserved - rootdesc_read);
     }
   }
