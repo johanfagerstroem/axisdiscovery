@@ -17,7 +17,7 @@
 #define SSDP_TIMEOUT 1
 
 /* Axis SSDP and rootdesc are normally around 500 and 1500 bytes respectively */
-#define AXIS_SSDP_BUFLEN 500
+#define AXIS_SSDP_BUFLEN 512
 #define AXIS_ROOTDESC_BUFLEN 2000
 
 #define AXIS_SSDP_ST "urn:axis-com:service:BasicService:1"
