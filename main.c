@@ -91,6 +91,11 @@ device *device_new_from_rootdesc(char *rootdesc)
   return dev;
 }
 
+int device_compare(device *dev1, device *dev2) {
+  int modelcmp = strcmp(dev1->model, dev2->model);
+  return modelcmp == 0 ? strcmp(dev1->mac, dev2->mac) : modelcmp;
+}
+
 void device_print(device *dev)
 {
   printf("%-15s  %-10s  %s\n", dev->model, dev->mac, dev->url);
@@ -114,7 +119,7 @@ void devicelist_insert(device *dev)
   } else {
     prev = NULL;
     next = devicelist;
-    while (next && strcmp(next->device->model, dev->model) < 0) {
+    while (next && device_compare(next->device, dev) < 0) {
       prev = next;
       next = next->ptr;
     }
