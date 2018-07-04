@@ -12,7 +12,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#define SSDP_ADDRESS "239.255.255.250"
+#define SSDP_ADDRESS "255.255.255.255"
 #define SSDP_PORT 1900
 #define SSDP_TIMEOUT 1
 
