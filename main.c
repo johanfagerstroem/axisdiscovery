@@ -20,7 +20,7 @@
 #define AXIS_SSDP_BUFLEN 512
 #define AXIS_ROOTDESC_BUFLEN 2000
 
-#define AXIS_SSDP_ST "urn:axis-com:service:BasicService:1"
+#define AXIS_SSDP_ST "urn:axis-com:service:*"
 
 const char *REQUEST_AXIS = "M-SEARCH * HTTP/1.1\r\n\
 HOST: 239.255.255.250:1900\r\n\
