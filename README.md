@@ -35,7 +35,6 @@ Maybe future features:
 * Command-line options to sort device list based on MAC or IP instead of model
   number.
 * Microsoft Windows portability
-* Travis-CI to build statically linked binaries for some different archs
 
 Disclaimer:
 -----------
