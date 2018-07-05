@@ -1,10 +1,15 @@
 Axis Device Discovery Utility
 =========================================
+
+[![Build Status](https://travis-ci.org/johanfagerstroem/axisdiscovery.svg?branch=master)](https://travis-ci.org/johanfagerstroem/axisdiscovery)
+
 A small command-line utility that lists Axis devices on your network using
 UPnP/SSDP.
 
 Written in C for GNU/Linux using no external libraries. Works also under
 Cygwin.
+
+Pre-built binaries are found under releases.
 
 Build:
 ------
