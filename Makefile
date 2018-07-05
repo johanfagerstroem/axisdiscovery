@@ -1,8 +1,12 @@
-PROG="axisdiscovery"
 SRC="main.c"
 
+BASENAME="axisdiscovery"
 VERSION=$(shell git describe --always --dirty)
+MACHINE=$(shell $(CC) -dumpmachine)
+
 CFLAGS=-Wall -DVERSION=\"$(VERSION)\"
+
+PROG = $(BASENAME)-$(VERSION)-$(MACHINE)
 
 all: $(PROG)
 

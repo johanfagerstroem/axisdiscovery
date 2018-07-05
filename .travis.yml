@@ -3,19 +3,29 @@ jobs:
   - stage: armhf
     language: c
     compiler: arm-linux-gnueabihf-gcc
-    script: make && cp axisdiscovery axisdiscovery-armhf
+    script: make
     before_install:
     - sudo apt-get update -qq
     - sudo apt-get install gcc-arm-linux-gnueabihf
-  - stage: x86
-    language: c
-    compiler: x86_64-linux-gnu-gcc
-    script: make && cp axisdiscovery axisdiscovery-x86_64
     deploy:
       provider: releases
       api_key:
         secure: e69wxFR627XN5l2OGZiDQxQq94gfQeurhY+cAH3Cd5EUgGh/biTNcS6YrDZb/xFqGnyhqYt4LMDERsn1Z2xaaPUBYpVeZ21LAjtbrKNY2QWBXa1E+frqFlxwDUEP1A2fq7Rz45f2SR1ltmpiHj/O36XeBpuqyffWN1OyYpmYzTQ2teoR5K5fJQTaj8bGcXBhL/moAXd1+EpsWJxKpiYHBeVtolu5kASNuH0/DZLMeP9s4i50rn8cLGm0z2F+Gbb+dPffMZiWj67O4mCYlobwLXf2nl56aSuBmgNO1WteFCB8LF9O4BOe+7VI9nYzIz62xStOcfFZEkKhk4nJnaUtTZ/49CbB14fUNtLEn30/2bEkeYqrYw5gEevj/aw9kkvjSinI87wK5X308y4ob1XejD9ObZQAx4ZSpgETXjQBUaroAnC/FWhmaichTYBrr14CtNtHMhdrun9YF/ttsY05RSLbtGapdKtMQFsaknsVBU7a7X5p2FFVyWHqaPZjuoYZI31w9mXcBQJFLCCJmDAif5Vb3Smu90cl/l3/v8qJo2mxrNLk338Wekzf9JVJ7hSmcfrHzA4/BLAFtD+5gixqTkfu7OHsfoM/3WRtUWtHQqZngblp8GGRQESFbp/DNA3kGICyKoBrzEUScloB1vo061DSJWn4gTL21USmnJViH9s=
-      file: axisdiscovery-x86_64
+      file_glob: true
+      file: "axisdiscovery-*"
       skip_cleanup: true
       on:
-        tags: false
+        tags: true
+  - stage: x86
+    language: c
+    compiler: x86_64-linux-gnu-gcc
+    script: make
+    deploy:
+      provider: releases
+      api_key:
+        secure: e69wxFR627XN5l2OGZiDQxQq94gfQeurhY+cAH3Cd5EUgGh/biTNcS6YrDZb/xFqGnyhqYt4LMDERsn1Z2xaaPUBYpVeZ21LAjtbrKNY2QWBXa1E+frqFlxwDUEP1A2fq7Rz45f2SR1ltmpiHj/O36XeBpuqyffWN1OyYpmYzTQ2teoR5K5fJQTaj8bGcXBhL/moAXd1+EpsWJxKpiYHBeVtolu5kASNuH0/DZLMeP9s4i50rn8cLGm0z2F+Gbb+dPffMZiWj67O4mCYlobwLXf2nl56aSuBmgNO1WteFCB8LF9O4BOe+7VI9nYzIz62xStOcfFZEkKhk4nJnaUtTZ/49CbB14fUNtLEn30/2bEkeYqrYw5gEevj/aw9kkvjSinI87wK5X308y4ob1XejD9ObZQAx4ZSpgETXjQBUaroAnC/FWhmaichTYBrr14CtNtHMhdrun9YF/ttsY05RSLbtGapdKtMQFsaknsVBU7a7X5p2FFVyWHqaPZjuoYZI31w9mXcBQJFLCCJmDAif5Vb3Smu90cl/l3/v8qJo2mxrNLk338Wekzf9JVJ7hSmcfrHzA4/BLAFtD+5gixqTkfu7OHsfoM/3WRtUWtHQqZngblp8GGRQESFbp/DNA3kGICyKoBrzEUScloB1vo061DSJWn4gTL21USmnJViH9s=
+      file_glob: true
+      file: "axisdiscovery-*"
+      skip_cleanup: true
+      on:
+        tags: true
