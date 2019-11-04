@@ -31,4 +31,4 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./axisdiscovery-${{ github.ref }}-x86_64-linux-gnu
-      
+          asset_name: axisdiscovery-${{ github.ref }}-x86_64-linux-gnu
