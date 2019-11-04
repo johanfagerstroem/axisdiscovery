@@ -1,6 +1,7 @@
 on:
   push:
-    types: [tags]
+    tags:
+      - '*'
 
 name: Build and release
 
