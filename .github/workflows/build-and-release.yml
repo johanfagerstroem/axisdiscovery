@@ -1,7 +1,7 @@
 on:
   push:
-    ref:
-      - 'refs/tags/*'
+    tags:
+      - *
 
 name: Build and release
 
