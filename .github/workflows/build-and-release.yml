@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@master
       - name: Get version from tag
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo ::set-output name=VERSION::test
       - name: Build
         run: |
           make
@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@master
       - name: Get version from tag
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo ::set-output name=VERSION::test
       - name: Install compiler
         run: |
           sudo apt-get update -qq
@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@master
       - name: Get version from tag
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo ::set-output name=VERSION::test
       - name: Fetch artifact (x86-64)
         uses: actions/download-artifact@master
         with:
