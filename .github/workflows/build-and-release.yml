@@ -25,7 +25,7 @@ jobs:
           path: ./axisdiscovery-${{ steps.get_version.outputs.VERSION }}-x86_64-linux-gnu
 
   armhf:
-    name: Build for ARMhf
+    name: Build for armhf
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -64,34 +64,38 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: axisdiscovery-${{ steps.get_version.outputs.VERSION }}-arm-linux-gnueabihf
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.get_version.outputs.VERSION }}
-          release_name: ${{ steps.get_version.outputs.VERSION }}
-          draft: false
-          prerelease: false
-      - name: Upload release (x86-64)
-        id: upload-release-asset-x86-64
-        uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./axisdiscovery-${{ steps.get_version.outputs.VERSION }}-x86_64-linux-gnu
-          asset_name: axisdiscovery-${{ steps.get_version.outputs.VERSION }}-x86_64-linux-gnu
-          asset_content_type: application/octet-stream
-      - name: Upload release (armhf)
-        id: upload-release-asset-armhf
-        uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./axisdiscovery-${{ steps.get_version.outputs.VERSION }}-arm-linux-gnueabihf
-          asset_name: axisdiscovery-${{ steps.get_version.outputs.VERSION }}-arm-linux-gnueabihf
-          asset_content_type: application/octet-stream
+      - name: List dir
+        run: |
+          ls -R
+          ls -lath
+#      - name: Create release
+#        id: create_release
+#        uses: actions/create-release@v1.0.0
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          tag_name: ${{ steps.get_version.outputs.VERSION }}
+#          release_name: ${{ steps.get_version.outputs.VERSION }}
+#          draft: false
+#          prerelease: false
+#      - name: Upload release (x86-64)
+#        id: upload-release-asset-x86-64
+#        uses: actions/upload-release-asset@v1.0.1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          upload_url: ${{ steps.create_release.outputs.upload_url }}
+#          asset_path: ./axisdiscovery-${{ steps.get_version.outputs.VERSION }}-x86_64-linux-gnu
+#          asset_name: axisdiscovery-${{ steps.get_version.outputs.VERSION }}-x86_64-linux-gnu
+#          asset_content_type: application/octet-stream
+#      - name: Upload release (armhf)
+#        id: upload-release-asset-armhf
+#        uses: actions/upload-release-asset@v1.0.1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          upload_url: ${{ steps.create_release.outputs.upload_url }}
+#          asset_path: ./axisdiscovery-${{ steps.get_version.outputs.VERSION }}-arm-linux-gnueabihf
+#          asset_name: axisdiscovery-${{ steps.get_version.outputs.VERSION }}-arm-linux-gnueabihf
+#          asset_content_type: application/octet-stream
 
