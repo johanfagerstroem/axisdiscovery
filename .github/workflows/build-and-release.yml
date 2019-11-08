@@ -56,7 +56,7 @@ jobs:
       - name: Get version from tag
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-      - name: Fetch artifact (x86-64)
+      - name: Fetch artifact (x86_64)
         uses: actions/download-artifact@master
         with:
           name: axisdiscovery-${{ steps.get_version.outputs.VERSION }}-x86_64-linux-gnu
